@@ -2,16 +2,35 @@ import { createContext, useState, useEffect } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 
-export const AppContent = createContext();
+export const AppContext = createContext();
 
 export const AppContextProvider = (props) => {
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
   const [isLoggedin, setIsLoggedin] = useState(false);
   const [userData, setUserData] = useState(null);
-  const [usage, setUsage] = useState(null); // ✅ NEW: usage tracking
+  const [usage, setUsage] = useState(null);
 
-  // ✅ Function to get logged-in user data
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    const savedTheme = localStorage.getItem("theme");
+    return savedTheme ? savedTheme === "dark" : true;
+  });
+
+  const toggleTheme = () => {
+    console.log("Toggling theme to:", !isDarkMode ? "dark" : "light");
+    setIsDarkMode((prev) => !prev);
+  };
+
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("theme", "dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+    }
+  }, [isDarkMode]);
+
   const getUserData = async () => {
     try {
       const { data } = await axios.get(`${backendUrl}/api/user/data`, {
@@ -22,18 +41,15 @@ export const AppContextProvider = (props) => {
         setUserData(data.userData);
         setIsLoggedin(true);
       } else {
-        toast.error(data.message);
         setUserData(null);
         setIsLoggedin(false);
       }
     } catch (error) {
       setUserData(null);
       setIsLoggedin(false);
-      toast.error(error.response?.data?.message || "Something went wrong");
     }
   };
 
-  // ✅ Function to get user usage data
   const getUsage = async () => {
     try {
       const { data } = await axios.get(`${backendUrl}/api/usage/stats`, {
@@ -41,15 +57,12 @@ export const AppContextProvider = (props) => {
       });
       if (data.success) {
         setUsage(data.data);
-      } else {
-        console.warn("⚠️ Usage data not found:", data.message);
       }
     } catch (err) {
-      console.error("Usage fetch failed:", err.message);
+      console.warn("Usage fetch failed (backend possibly down)");
     }
   };
 
-  // ✅ Load both user & usage data when app starts
   useEffect(() => {
     getUserData();
     getUsage();
@@ -62,13 +75,15 @@ export const AppContextProvider = (props) => {
     userData,
     setUserData,
     getUserData,
-    usage, // ✅ expose usage data globally
-    getUsage, // ✅ expose function to refresh usage
+    usage,
+    getUsage,
+    isDarkMode,
+    toggleTheme,
   };
 
   return (
-    <AppContent.Provider value={value}>
+    <AppContext.Provider value={value}>
       {props.children}
-    </AppContent.Provider>
+    </AppContext.Provider>
   );
 };
