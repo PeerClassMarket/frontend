@@ -5,7 +5,7 @@ import { AppContext } from '../context/AppContext';
 
 export default function NavBar() {
   const navigate = useNavigate();
-  const { isDarkMode, toggleTheme } = useContext(AppContext);
+  const { isDarkMode, toggleTheme, isLoggedin, login, logout } = useContext(AppContext);
 
   const navLinks = [
     { name: 'Home', path: '/', hasDropdown: true },
@@ -54,15 +54,34 @@ export default function NavBar() {
         </button>
 
         <div className="hidden sm:flex items-center gap-4">
-          <Link to="/login" name="navbar-signin" className="text-white font-bold hover:text-brand-green transition-colors">
-            Sign In
-          </Link>
-          <button 
-            onClick={() => navigate('/register')}
-            className="px-8 py-3 bg-brand-green text-brand-dark font-black rounded-full hover:bg-white transition-all transform hover:scale-105 shadow-lg shadow-brand-green/20"
-          >
-            Sign Up
-          </button>
+          {!isLoggedin ? (
+            <>
+              <button 
+                onClick={login} 
+                className="text-white font-bold hover:text-brand-green transition-colors"
+              >
+                Sign In
+              </button>
+              <button 
+                onClick={login}
+                className="px-8 py-3 bg-brand-green text-brand-dark font-black rounded-full hover:bg-white transition-all transform hover:scale-105 shadow-lg shadow-brand-green/20"
+              >
+                Sign Up
+              </button>
+            </>
+          ) : (
+            <>
+              <Link to="/student-dashboard" className="text-white font-bold hover:text-brand-green transition-colors">
+                Dashboard
+              </Link>
+              <button 
+                onClick={logout}
+                className="px-8 py-3 bg-white/10 text-white font-bold rounded-full hover:bg-rose-500 hover:text-white transition-all"
+              >
+                Logout
+              </button>
+            </>
+          )}
         </div>
       </div>
     </nav>

@@ -53,9 +53,12 @@ export default function Courses() {
                     <span className="flex items-center gap-1"><Clock className="w-4 h-4" /> {course.duration}</span>
                     <span className="flex items-center gap-1"><Users className="w-4 h-4" /> {course.students}</span>
                   </div>
-                  <button className="w-full py-3 bg-brand-dark dark:bg-white/10 text-white font-bold rounded-xl hover:bg-brand-green hover:text-brand-dark transition-all">
-                    Enroll Now
-                  </button>
+                  <Link 
+                    to={`/booking/${course.id || i + 1}`} 
+                    className="block w-full py-3 bg-brand-dark dark:bg-white/10 text-white font-bold text-center rounded-xl hover:bg-brand-green hover:text-brand-dark transition-all"
+                  >
+                    Book Session
+                  </Link>
                 </div>
               </motion.div>
             ))}

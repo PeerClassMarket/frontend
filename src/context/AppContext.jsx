@@ -1,14 +1,14 @@
 import { createContext, useState, useEffect } from "react";
 import axios from "axios";
-import { toast } from "react-toastify";
+import { supabase } from "../supabaseClient";
 
 export const AppContext = createContext();
 
 export const AppContextProvider = (props) => {
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
-
-  const [isLoggedin, setIsLoggedin] = useState(false);
+  const [session, setSession] = useState(null);
   const [userData, setUserData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [usage, setUsage] = useState(null);
 
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -16,8 +16,33 @@ export const AppContextProvider = (props) => {
     return savedTheme ? savedTheme === "dark" : true;
   });
 
+  // Supabase Auth Listener
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setIsLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Axios Interceptor to add Supabase Token
+  useEffect(() => {
+    const interceptor = axios.interceptors.request.use(async (config) => {
+      if (session?.access_token) {
+        config.headers.Authorization = `Bearer ${session.access_token}`;
+      }
+      return config;
+    });
+
+    return () => axios.interceptors.request.eject(interceptor);
+  }, [session]);
+
   const toggleTheme = () => {
-    console.log("Toggling theme to:", !isDarkMode ? "dark" : "light");
     setIsDarkMode((prev) => !prev);
   };
 
@@ -32,53 +57,51 @@ export const AppContextProvider = (props) => {
   }, [isDarkMode]);
 
   const getUserData = async () => {
+    if (!session) {
+      setUserData(null);
+      return;
+    }
     try {
-      const { data } = await axios.get(`${backendUrl}/api/user/data`, {
-        withCredentials: true,
-      });
-
+      const { data } = await axios.get(`${backendUrl}/api/user/data`);
       if (data.success) {
         setUserData(data.userData);
-        setIsLoggedin(true);
-      } else {
-        setUserData(null);
-        setIsLoggedin(false);
       }
     } catch (error) {
-      setUserData(null);
-      setIsLoggedin(false);
+      setUserData(session.user);
     }
   };
 
   const getUsage = async () => {
     try {
-      const { data } = await axios.get(`${backendUrl}/api/usage/stats`, {
-        withCredentials: true,
-      });
+      const { data } = await axios.get(`${backendUrl}/api/usage/stats`);
       if (data.success) {
         setUsage(data.data);
       }
     } catch (err) {
-      console.warn("Usage fetch failed (backend possibly down)");
+      console.warn("Usage fetch failed");
     }
   };
 
   useEffect(() => {
-    getUserData();
-    getUsage();
-  }, []);
+    if (session) {
+      getUserData();
+      getUsage();
+    }
+  }, [session]);
 
   const value = {
     backendUrl,
-    isLoggedin,
-    setIsLoggedin,
-    userData,
+    isLoggedin: !!session,
+    userData: userData || session?.user,
     setUserData,
     getUserData,
     usage,
     getUsage,
     isDarkMode,
     toggleTheme,
+    isLoading,
+    login: () => supabase.auth.signInWithOAuth({ provider: 'google' }),
+    logout: () => supabase.auth.signOut()
   };
 
   return (
