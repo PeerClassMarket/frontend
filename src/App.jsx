@@ -7,6 +7,10 @@ import ContactUs from './pages/ContactUs'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import ResetPassword from './pages/ResetPassword'
+import TutorDashboard from './pages/TutorDashboard'
+import StudentDashboard from './pages/StudentDashboard'
+import BookingPage from './pages/BookingPage'
+import VideoSession from './pages/VideoSession'
 import NavBar from './components/NavBar'
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -20,11 +24,17 @@ const App = () => {
       <Routes>
         <Route path='/' element={<Home />} />
         <Route path='/courses' element={<Courses />} />
+        <Route path='/booking/:id' element={<BookingPage />} />
         <Route path='/blogs' element={<Blogs />} />
         <Route path='/contact' element={<ContactUs />} />
         <Route path='/login' element={<Login />} />
         <Route path='/register' element={<Register />} />
         <Route path='/reset-password' element={<ResetPassword />} />
+        
+        {/* Protected Dashboards */}
+        <Route path='/tutor-dashboard' element={<TutorDashboard />} />
+        <Route path='/student-dashboard' element={<StudentDashboard />} />
+        <Route path='/video-session/:channelName' element={<VideoSession />} />
       </Routes>
     </div>
   )
