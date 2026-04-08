@@ -1,114 +1,176 @@
-import React, { useContext, useEffect, useState } from 'react';
-import { AppContext } from '../context/AppContext';
-import axios from 'axios';
+import React, { useContext, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Video, Calendar, Clock, Search, ArrowRight } from 'lucide-react';
-import { useNavigate, Link } from 'react-router-dom';
+import {
+  Search, Video, Clock, Calendar, BookOpen,
+  TrendingUp, Star, ArrowRight, GraduationCap, CheckCircle2, XCircle
+} from 'lucide-react';
+import { AppContext } from '../context/AppContext';
+import { mockStudentSessions, SESSION_TYPES, GRADE_CATEGORIES } from '../data/mockData';
+
+const STATUS_STYLE = {
+  CONFIRMED: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/20',
+  PENDING:   'bg-amber-500/15 text-amber-400 border-amber-500/20',
+  COMPLETED: 'bg-neutral-500/15 text-neutral-400 border-neutral-500/20',
+  CANCELLED: 'bg-rose-500/15 text-rose-400 border-rose-500/20',
+};
 
 export default function StudentDashboard() {
-  const { backendUrl } = useContext(AppContext);
-  const [bookings, setBookings] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { mockUser, studentGrade } = useContext(AppContext);
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('upcoming');
 
-  useEffect(() => {
-    fetchBookings();
-  }, []);
+  const gradeInfo  = GRADE_CATEGORIES.find(g => g.id === studentGrade);
+  const firstName  = mockUser?.name?.split(' ')[0] || 'Student';
 
-  const fetchBookings = async () => {
-    try {
-      const { data } = await axios.get(`${backendUrl}/api/bookings/my-bookings`);
-      if (data.success) {
-        setBookings(data.data.content || []);
-      }
-    } catch (error) {
-      console.error("Error fetching bookings", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const upcoming  = mockStudentSessions.filter(s => s.status === 'CONFIRMED' || s.status === 'PENDING');
+  const completed = mockStudentSessions.filter(s => s.status === 'COMPLETED');
+  const displayed = activeTab === 'upcoming' ? upcoming : completed;
 
-  const joinMeeting = (booking) => {
-    navigate(`/video-session/${booking.meetingChannel || booking.id}`);
-  };
+  const STATS = [
+    { label: 'Sessions Booked',   value: mockStudentSessions.length, icon: <BookOpen className="w-5 h-5" />,  color: 'text-brand-green' },
+    { label: 'Sessions Completed',value: completed.length,           icon: <CheckCircle2 className="w-5 h-5" />, color: 'text-violet-400' },
+    { label: 'Instructors',        value: new Set(mockStudentSessions.map(s => s.instructorId)).size, icon: <GraduationCap className="w-5 h-5" />, color: 'text-cyan-400' },
+    { label: 'Hours Learned',      value: `${mockStudentSessions.reduce((a,s) => a + (s.duration/60), 0).toFixed(1)}h`, icon: <Clock className="w-5 h-5" />, color: 'text-amber-400' },
+  ];
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-brand-dark transition-colors duration-500 pt-24 px-8">
-      <div className="max-w-7xl mx-auto space-y-12">
-        <div className="flex justify-between items-end">
-          <div>
-            <h1 className="text-5xl font-black text-brand-dark dark:text-white">My Learning</h1>
-            <p className="text-neutral-500 dark:text-neutral-400 mt-2">Check your upcoming sessions and track your progress.</p>
+    <div className="min-h-screen bg-brand-dark text-white">
+      <div className="max-w-7xl mx-auto px-6 lg:px-10 pt-10 pb-20 space-y-10">
+
+        {/* Welcome banner */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+          className="relative bg-gradient-to-br from-brand-green/20 to-emerald-500/5 border border-brand-green/20 rounded-3xl p-8 overflow-hidden">
+          <div className="absolute right-6 top-6 text-7xl opacity-10 select-none">🎓</div>
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+            <div>
+              <p className="text-sm text-brand-green font-bold uppercase tracking-widest mb-1">Welcome back</p>
+              <h1 className="text-3xl md:text-4xl font-black text-white">{firstName}! 👋</h1>
+              {gradeInfo && (
+                <p className="text-neutral-400 mt-2">
+                  {gradeInfo.label} · {gradeInfo.description}
+                </p>
+              )}
+            </div>
+            <Link
+              to="/find-instructors"
+              className="flex items-center gap-2 px-6 py-3 bg-brand-green text-brand-dark font-black rounded-xl hover:bg-white transition-all shadow-lg shadow-brand-green/20 flex-shrink-0"
+            >
+              <Search className="w-4 h-4" /> Find Instructors
+            </Link>
           </div>
-          <Link 
-            to="/courses" 
-            className="flex items-center gap-2 px-6 py-3 bg-brand-green text-brand-dark font-bold rounded-2xl hover:bg-brand-dark hover:text-white transition-all shadow-lg shadow-brand-green/20"
-          >
-            <Search className="w-5 h-5" /> Find New Tutors
-          </Link>
+        </motion.div>
+
+        {/* Stats row */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {STATS.map((s, i) => (
+            <motion.div key={i} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}
+              className="bg-white/5 border border-white/10 rounded-2xl p-5">
+              <div className={`flex items-center gap-2 mb-2 ${s.color}`}>
+                {s.icon}
+                <span className="text-2xl font-black text-white">{s.value}</span>
+              </div>
+              <p className="text-sm text-neutral-400">{s.label}</p>
+            </motion.div>
+          ))}
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-3 space-y-6">
-            <h2 className="text-2xl font-bold text-brand-dark dark:text-white">Upcoming Sessions</h2>
-            
-            {loading ? (
-              <div className="grid gap-4">
-                {[1, 2, 3].map(i => <div key={i} className="h-32 bg-slate-200 dark:bg-white/5 animate-pulse rounded-3xl" />)}
-              </div>
-            ) : bookings.length === 0 ? (
-              <div className="bg-white dark:bg-white/5 p-12 rounded-[2rem] text-center border border-dashed border-neutral-300 dark:border-white/10">
-                <p className="text-neutral-400">You have no upcoming sessions. Start learning today!</p>
-                <Link to="/courses" className="inline-flex items-center gap-2 mt-4 text-brand-green font-bold hover:underline">
-                   Browse Tutors <ArrowRight className="w-4 h-4" />
-                </Link>
-              </div>
-            ) : (
-              <div className="grid gap-6">
-                {bookings.map((booking) => (
-                  <motion.div 
-                    key={booking.id}
-                    initial={{ opacity: 0, scale: 0.98 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="bg-white dark:bg-white/5 p-6 rounded-[2rem] border border-slate-200 dark:border-white/10 flex flex-wrap items-center justify-between gap-6 hover:shadow-xl transition-shadow"
-                  >
-                    <div className="flex items-center gap-6">
-                      <div className="w-16 h-16 bg-brand-green/20 rounded-2xl flex items-center justify-center text-brand-green">
-                        <Video className="w-8 h-8" />
+        {/* Sessions section */}
+        <div>
+          {/* Tab bar */}
+          <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
+            <div className="flex gap-1 bg-white/5 border border-white/10 rounded-2xl p-1">
+              {['upcoming', 'completed'].map(tab => (
+                <button key={tab} onClick={() => setActiveTab(tab)}
+                  className={`px-5 py-2 rounded-xl text-sm font-bold capitalize transition-all ${activeTab === tab ? 'bg-brand-green text-brand-dark' : 'text-neutral-400 hover:text-white'}`}>
+                  {tab}
+                </button>
+              ))}
+            </div>
+            <Link to="/find-instructors" className="flex items-center gap-1.5 text-sm text-brand-green font-bold hover:gap-2.5 transition-all">
+              Browse More <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+
+          {displayed.length === 0 ? (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+              className="bg-white/5 border border-dashed border-white/10 rounded-3xl p-16 text-center">
+              <p className="text-5xl mb-4">📚</p>
+              <h3 className="text-xl font-black text-white mb-2">No sessions yet</h3>
+              <p className="text-neutral-400 mb-6">Find an instructor and book your first session.</p>
+              <Link to="/find-instructors" className="inline-flex items-center gap-2 px-6 py-3 bg-brand-green text-brand-dark font-black rounded-xl hover:bg-white transition-all">
+                Find Instructors <ArrowRight className="w-4 h-4" />
+              </Link>
+            </motion.div>
+          ) : (
+            <div className="space-y-4">
+              {displayed.map((session, i) => {
+                const st = SESSION_TYPES.find(t => t.id === session.sessionType);
+                return (
+                  <motion.div key={session.id}
+                    initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}
+                    className="bg-white/5 border border-white/10 rounded-2xl p-5 flex flex-wrap items-center justify-between gap-5 hover:border-brand-green/20 transition-all">
+
+                    <div className="flex items-center gap-5">
+                      {/* Session type icon */}
+                      <div className="w-14 h-14 bg-brand-green/10 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0">
+                        {st?.icon || '📖'}
                       </div>
                       <div>
-                        <h3 className="font-bold text-xl text-brand-dark dark:text-white">{booking.gig.title}</h3>
-                        <p className="text-sm text-neutral-500 dark:text-neutral-400">Tutor: {booking.gig.tutor.name}</p>
-                        <div className="flex items-center gap-4 text-sm mt-1">
-                          <span className="flex items-center gap-1 text-neutral-500 dark:text-neutral-400"><Clock className="w-4 h-4" /> {new Date(booking.startTime).toLocaleString()}</span>
-                          <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
-                            booking.status === 'CONFIRMED' ? 'bg-emerald-100 text-emerald-700' :
-                            booking.status === 'PENDING' ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700'
-                          }`}>
-                            {booking.status}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-black text-white">{session.subject}</h3>
+                          <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${STATUS_STYLE[session.status]}`}>
+                            {session.status}
                           </span>
+                        </div>
+                        <p className="text-sm text-neutral-400 mt-0.5">
+                          {st?.label} · with <span className="text-white font-semibold">{session.instructorName}</span>
+                        </p>
+                        <div className="flex items-center gap-4 mt-1.5 text-xs text-neutral-500">
+                          <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" />{session.date}</span>
+                          <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" />{session.time} · {session.duration} min</span>
+                          <span className="font-bold text-neutral-400">LKR {session.priceTotal.toLocaleString()}</span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-4">
-                      {booking.status === 'CONFIRMED' ? (
-                        <button 
-                          onClick={() => joinMeeting(booking)}
-                          className="flex items-center gap-2 px-6 py-3 bg-brand-green text-brand-dark font-bold rounded-xl hover:bg-brand-dark hover:text-white transition-all shadow-md shadow-brand-green/10"
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                      {session.status === 'CONFIRMED' && (
+                        <button
+                          onClick={() => navigate(`/video-session/${session.meetingChannel}`)}
+                          className="flex items-center gap-2 px-5 py-2.5 bg-brand-green text-brand-dark font-black rounded-xl hover:bg-white transition-all text-sm shadow-lg shadow-brand-green/20"
                         >
-                          <Video className="w-5 h-5" /> Join Session
+                          <Video className="w-4 h-4" /> Join Session
                         </button>
-                      ) : (
-                        <p className="text-sm font-medium text-neutral-400">Waiting for tutor approval</p>
+                      )}
+                      {session.status === 'PENDING' && (
+                        <span className="text-xs text-amber-400 font-bold">Awaiting confirmation</span>
+                      )}
+                      {session.status === 'COMPLETED' && (
+                        <div className="flex items-center gap-1.5 text-neutral-400 text-sm">
+                          <Star className="w-4 h-4 text-amber-400" />
+                          <span>Rate session</span>
+                        </div>
                       )}
                     </div>
                   </motion.div>
-                ))}
-              </div>
-            )}
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Quick tip */}
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-5 flex items-start gap-4">
+          <TrendingUp className="w-5 h-5 text-brand-green flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="font-bold text-white text-sm">Pro Tip</p>
+            <p className="text-sm text-neutral-400 mt-0.5">
+              For best results, mention the specific paper year and question numbers when you book a Paper Discussion session.
+            </p>
           </div>
         </div>
+
       </div>
     </div>
   );
