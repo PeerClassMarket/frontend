@@ -2,6 +2,7 @@ import React from 'react'
 import { Routes, Route } from 'react-router-dom'
 import Home from './pages/Home'
 import FindInstructors from './pages/Courses'
+import SubjectCatalog from './pages/SubjectCatalog'
 import InstructorProfile from './pages/InstructorProfile'
 import Onboarding from './pages/Onboarding'
 import Blogs from './pages/Blogs'
@@ -39,6 +40,7 @@ const App = () => {
       <Routes>
         {/* Public */}
         <Route path='/' element={<Home />} />
+        <Route path='/categories' element={<SubjectCatalog />} />
         <Route path='/find-instructors' element={<FindInstructors />} />
         <Route path='/instructor/:id' element={<InstructorProfile />} />
         <Route path='/booking/:id' element={<BookingPage />} />

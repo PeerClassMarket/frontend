@@ -70,7 +70,7 @@ export default function BookingPage() {
             {/* Instructor card */}
             <div className="bg-white/5 border border-white/10 rounded-2xl p-5 flex items-center gap-4">
               <div className="w-16 h-16 rounded-2xl overflow-hidden ring-2 ring-white/10 flex-shrink-0">
-                <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${inst.avatar}&backgroundColor=b6e3f4`} alt={inst.name} className="w-full h-full object-cover" />
+                <img src={inst.avatar} alt={inst.name} className="w-full h-full object-cover" />
               </div>
               <div>
                 <p className="font-black text-white">{inst.name}</p>

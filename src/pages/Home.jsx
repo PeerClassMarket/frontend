@@ -5,6 +5,7 @@ import {
   ArrowRight, BookOpen, Users, Star, CheckCircle2,
   GraduationCap, Award, Zap, TrendingUp
 } from "lucide-react";
+import { mockInstructors } from "../data/mockData";
 
 const HOW_IT_WORKS = [
   {
@@ -30,15 +31,10 @@ const HOW_IT_WORKS = [
   },
 ];
 
-const SUBJECTS = [
-  { name: "Combined Maths", emoji: "🔢", count: "18 instructors" },
-  { name: "Physics", emoji: "⚛️", count: "14 instructors" },
-  { name: "Chemistry", emoji: "🧪", count: "12 instructors" },
-  { name: "Biology", emoji: "🧬", count: "11 instructors" },
-  { name: "English", emoji: "📝", count: "9 instructors" },
-  { name: "Economics", emoji: "📊", count: "8 instructors" },
-  { name: "ICT", emoji: "💻", count: "10 instructors" },
-  { name: "History", emoji: "📜", count: "6 instructors" },
+const ED_CATEGORIES = [
+  { id: "grade6-9", name: "Grade 6 – 9", desc: "Foundational middle school subjects via peer guidance.", emoji: "🎒" },
+  { id: "grade10-11", name: "Grade 10 – 11 (O/L)", desc: "Core GCE Ordinary Level subjects.", emoji: "📘" },
+  { id: "grade12-13", name: "Grade 12 – 13 (A/L)", desc: "Specialized streams for GCE Advanced Level.", emoji: "🎓" },
 ];
 
 const STATS = [
@@ -48,35 +44,7 @@ const STATS = [
   { value: "4.8★", label: "Average Rating", icon: <Star className="w-5 h-5" /> },
 ];
 
-const INSTRUCTORS_PREVIEW = [
-  {
-    name: "Kavindi Perera",
-    badge: "🏆 Island Rank 12",
-    institution: "University of Colombo",
-    subjects: ["Combined Maths", "Physics"],
-    price: 800,
-    rating: 4.9,
-    avatar: "Kavindi",
-  },
-  {
-    name: "Tharindu Rajapaksha",
-    badge: "🏆 Island Rank 8",
-    institution: "Univ. of Peradeniya — Engineering",
-    subjects: ["Physics", "ICT"],
-    price: 900,
-    rating: 4.8,
-    avatar: "Tharindu",
-  },
-  {
-    name: "Nethmi Amarasinghe",
-    badge: "⭐ Top Biology Student",
-    institution: "Visakha Vidyalaya",
-    subjects: ["Biology", "Chemistry"],
-    price: 600,
-    rating: 4.7,
-    avatar: "Nethmi",
-  },
-];
+
 
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 30 },
@@ -165,7 +133,7 @@ export default function Home() {
       <section id="how-it-works" className="py-24 px-6 lg:px-10 bg-white/[0.02]">
         <div className="max-w-7xl mx-auto">
           <motion.div {...fadeUp()} className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-black">How It Works</h2>
+            <h2 className="text-4xl md:text-5xl font-black">Your Path to Excellence</h2>
             <p className="mt-4 text-neutral-400 max-w-xl mx-auto">
               Three simple steps to your next great study session.
             </p>
@@ -193,34 +161,41 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Subject Categories ───────────────────────────────────── */}
+      {/* ── Education Categories ───────────────────────────────────── */}
       <section className="py-24 px-6 lg:px-10">
         <div className="max-w-7xl mx-auto">
           <motion.div {...fadeUp()} className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-12">
             <div>
-              <h2 className="text-4xl md:text-5xl font-black">Browse by Subject</h2>
+              <h2 className="text-4xl md:text-5xl font-black">Browse by Education Category</h2>
               <p className="mt-3 text-neutral-400 max-w-md">
-                Sri Lanka O/L and A/L curriculum subjects — all covered.
+                Select your grade level to discover all relevant subjects and tailored instructors.
               </p>
             </div>
             <Link
-              to="/find-instructors"
+              to="/categories"
               className="flex items-center gap-2 text-brand-green font-bold hover:gap-3 transition-all"
             >
-              View All <ArrowRight className="w-4 h-4" />
+              View Full Catalog <ArrowRight className="w-4 h-4" />
             </Link>
           </motion.div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {SUBJECTS.map((sub, i) => (
-              <motion.div key={i} {...fadeUp(i * 0.07)}>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {ED_CATEGORIES.map((cat, i) => (
+              <motion.div key={i} {...fadeUp(i * 0.1)}>
                 <Link
-                  to={`/find-instructors?subject=${encodeURIComponent(sub.name)}`}
-                  className="group flex flex-col items-center justify-center gap-3 p-6 bg-white/5 border border-white/10 rounded-2xl hover:border-brand-green/40 hover:bg-brand-green/5 transition-all cursor-pointer text-center"
+                  to={`/categories?activeTab=${cat.id}`}
+                  className="group flex flex-col items-start gap-4 p-8 bg-white/5 border border-white/10 rounded-3xl hover:border-brand-green/40 hover:bg-brand-green/5 transition-all cursor-pointer h-full"
                 >
-                  <span className="text-4xl">{sub.emoji}</span>
-                  <h3 className="font-black text-white group-hover:text-brand-green transition-colors">{sub.name}</h3>
-                  <span className="text-xs text-neutral-500">{sub.count}</span>
+                  <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">
+                    {cat.emoji}
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-black text-white group-hover:text-brand-green transition-colors">{cat.name}</h3>
+                    <p className="mt-2 text-neutral-500 leading-relaxed">{cat.desc}</p>
+                  </div>
+                  <div className="mt-auto pt-4 flex items-center gap-2 text-sm font-bold text-neutral-400 group-hover:text-brand-green transition-colors">
+                    Explore Subjects <ArrowRight className="w-4 h-4" />
+                  </div>
                 </Link>
               </motion.div>
             ))}
@@ -239,13 +214,13 @@ export default function Home() {
           </motion.div>
 
           <div className="grid md:grid-cols-3 gap-6">
-            {INSTRUCTORS_PREVIEW.map((inst, i) => (
+            {mockInstructors.slice(0, 3).map((inst, i) => (
               <motion.div key={i} {...fadeUp(i * 0.1)}>
                 <div className="bg-white/5 border border-white/10 rounded-3xl p-6 hover:border-brand-green/30 hover:shadow-xl hover:shadow-brand-green/5 transition-all group">
                   <div className="flex items-center gap-4 mb-5">
                     <div className="w-16 h-16 rounded-2xl overflow-hidden ring-2 ring-brand-green/20 flex-shrink-0">
                       <img
-                        src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${inst.avatar}&backgroundColor=b6e3f4`}
+                        src={inst.avatar}
                         alt={inst.name}
                         className="w-full h-full object-cover"
                       />
@@ -268,7 +243,7 @@ export default function Home() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs text-neutral-500">Starting from</p>
-                      <p className="font-black text-white">LKR {inst.price.toLocaleString()}<span className="text-neutral-400 font-normal text-xs">/hr</span></p>
+                      <p className="font-black text-white">LKR {inst.pricePerHour.toLocaleString()}<span className="text-neutral-400 font-normal text-xs">/hr</span></p>
                     </div>
                     <div className="flex items-center gap-1 text-amber-400">
                       <Star className="w-4 h-4 fill-amber-400" />
@@ -341,7 +316,7 @@ export default function Home() {
               { emoji: "🎯", title: "Paper Discussion", desc: "Work through past papers together with an instructor who's done it before." },
               { emoji: "📖", title: "Theory Classes", desc: "Master concepts from the Sri Lanka O/L & A/L syllabus, explained clearly." },
               { emoji: "⏱️", title: "Flexible Duration", desc: "30 min, 1 hour or 2 hours — book exactly what you need." },
-              { emoji: "💳", title: "Affordable Rates", desc: "Sessions from LKR 300 — quality guidance at peer-level prices." },
+              { emoji: "💳", title: "Affordable Rates", desc: "Quality guidance at peer-level prices." },
             ].map((card, i) => (
               <div key={i} className="bg-white/5 border border-white/10 rounded-2xl p-5 hover:border-brand-green/20 transition-all">
                 <span className="text-3xl">{card.emoji}</span>

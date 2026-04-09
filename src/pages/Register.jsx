@@ -6,7 +6,7 @@ import {
   BookOpen, ChevronDown
 } from 'lucide-react';
 import { AppContext } from '../context/AppContext';
-import { ALL_SUBJECTS, GRADE_CATEGORIES, INSTRUCTOR_LEVELS } from '../data/mockData';
+import { ALL_SUBJECTS, SL_SUBJECTS, GRADE_CATEGORIES, INSTRUCTOR_LEVELS } from '../data/mockData';
 
 const GRADE_OPTIONS = GRADE_CATEGORIES.map(g => ({ value: g.id, label: g.label }));
 const INST_OPTIONS  = INSTRUCTOR_LEVELS.map(l => ({ value: l.id, label: l.label }));
@@ -40,10 +40,9 @@ export default function Register() {
     setLoading(true);
 
     // Persist mock role
-    if (role === 'student') setGrade(form.gradeCategory || 'grade12-13');
     if (role === 'instructor') setInstLevel(form.instLevel || 'undergraduate');
 
-    mockLogin(role, { name: form.name || 'New User', email: form.email, subjects: form.subjects });
+    mockLogin(role, { name: form.name || 'New User', email: form.email, subjects: role === 'instructor' ? form.subjects : [] });
 
     setTimeout(() => {
       setLoading(false);
@@ -149,39 +148,9 @@ export default function Register() {
           <AnimatePresence>
             {role === 'student' && (
               <motion.div key="student-fields" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="space-y-4 overflow-hidden">
-                <div className="relative">
-                  <select
-                    value={form.gradeCategory}
-                    onChange={e => setForm(p => ({ ...p, gradeCategory: e.target.value }))}
-                    className="w-full appearance-none bg-white/5 text-white border border-white/10 rounded-2xl p-4 pl-5 pr-10 focus:ring-2 focus:ring-brand-green outline-none transition-all"
-                  >
-                    <option value="" disabled className="bg-gray-900">Select your grade level</option>
-                    {GRADE_OPTIONS.map(g => (
-                      <option key={g.value} value={g.value} className="bg-gray-900">{g.label}</option>
-                    ))}
-                  </select>
-                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500 pointer-events-none" />
-                </div>
-
-                <div>
-                  <p className="text-xs font-bold text-neutral-400 uppercase tracking-widest mb-2">Subjects you need help with</p>
-                  <div className="flex flex-wrap gap-2">
-                    {ALL_SUBJECTS.slice(0, 12).map(sub => (
-                      <button
-                        key={sub}
-                        type="button"
-                        onClick={() => toggleSubject(sub)}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
-                          form.subjects.includes(sub)
-                            ? 'bg-brand-green text-brand-dark border-brand-green'
-                            : 'bg-white/5 text-neutral-400 border-white/10 hover:border-white/30'
-                        }`}
-                      >
-                        {sub}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                <p className="text-sm text-neutral-400 text-center py-2 bg-white/5 rounded-2xl border border-white/10">
+                  You can select your grade and subjects anytime later in the system.
+                </p>
               </motion.div>
             )}
 
@@ -203,21 +172,47 @@ export default function Register() {
 
                 <div>
                   <p className="text-xs font-bold text-neutral-400 uppercase tracking-widest mb-2">Subjects you can teach</p>
-                  <div className="flex flex-wrap gap-2">
-                    {ALL_SUBJECTS.slice(0, 12).map(sub => (
-                      <button
-                        key={sub}
-                        type="button"
-                        onClick={() => toggleSubject(sub)}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
-                          form.subjects.includes(sub)
-                            ? 'bg-brand-green text-brand-dark border-brand-green'
-                            : 'bg-white/5 text-neutral-400 border-white/10 hover:border-white/30'
-                        }`}
-                      >
-                        {sub}
-                      </button>
-                    ))}
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-xs text-neutral-400 mb-2 font-bold">Grade 6-9 & O/L</p>
+                      <div className="flex flex-wrap gap-2">
+                        {SL_SUBJECTS.ol_and_lower.map(sub => (
+                          <button key={sub} type="button" onClick={() => toggleSubject(sub)} className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${form.subjects.includes(sub) ? 'bg-brand-green text-brand-dark border-brand-green' : 'bg-white/5 text-neutral-400 border-white/10 hover:border-white/30'}`}>
+                            {sub}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs text-neutral-400 mb-2 font-bold">A/L Science Stream</p>
+                      <div className="flex flex-wrap gap-2">
+                        {SL_SUBJECTS.al_stream_science.map(sub => (
+                          <button key={sub} type="button" onClick={() => toggleSubject(sub)} className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${form.subjects.includes(sub) ? 'bg-brand-green text-brand-dark border-brand-green' : 'bg-white/5 text-neutral-400 border-white/10 hover:border-white/30'}`}>
+                            {sub}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs text-neutral-400 mb-2 font-bold">A/L Technology Stream</p>
+                      <div className="flex flex-wrap gap-2">
+                        {SL_SUBJECTS.al_stream_technology.map(sub => (
+                          <button key={sub} type="button" onClick={() => toggleSubject(sub)} className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${form.subjects.includes(sub) ? 'bg-brand-green text-brand-dark border-brand-green' : 'bg-white/5 text-neutral-400 border-white/10 hover:border-white/30'}`}>
+                            {sub}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs text-neutral-400 mb-2 font-bold">A/L Commerce Stream</p>
+                      <div className="flex flex-wrap gap-2">
+                        {SL_SUBJECTS.al_stream_commerce.map(sub => (
+                          <button key={sub} type="button" onClick={() => toggleSubject(sub)} className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${form.subjects.includes(sub) ? 'bg-brand-green text-brand-dark border-brand-green' : 'bg-white/5 text-neutral-400 border-white/10 hover:border-white/30'}`}>
+                            {sub}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </motion.div>

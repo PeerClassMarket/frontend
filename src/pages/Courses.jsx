@@ -2,7 +2,7 @@ import React, { useState, useContext } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Search, Star, Filter, ChevronDown, X, ArrowRight } from 'lucide-react';
-import { mockInstructors, ALL_SUBJECTS, SESSION_TYPES } from '../data/mockData';
+import { mockInstructors, ALL_SUBJECTS, SL_SUBJECTS, SESSION_TYPES, GRADE_CATEGORIES } from '../data/mockData';
 import { AppContext } from '../context/AppContext';
 
 const LEVEL_LABELS = { 'al-student': 'A/L Student', 'undergraduate': 'Undergraduate' };
@@ -14,19 +14,24 @@ export default function FindInstructors() {
   const [search, setSearch]       = useState('');
   const [subject, setSubject]     = useState(searchParams.get('subject') || '');
   const [level, setLevel]         = useState('');
+  const [gradeLevel, setGradeLevel] = useState(searchParams.get('grade') || '');
   const [sessionType, setSession] = useState('');
   const [showFilters, setShowFilters] = useState(false);
 
   const filtered = mockInstructors.filter(inst => {
     const matchSearch  = !search  || inst.name.toLowerCase().includes(search.toLowerCase()) || inst.subjects.some(s => s.toLowerCase().includes(search.toLowerCase()));
+    
+    // Optional: filter by grade category? Instructors don't strictly have a grade field,
+    // so we just use gradeLevel as a way to narrow down the subjects dropdown.
+    // However, if the user picks a grade and a subject, the subject filter does the job!
     const matchSubject = !subject || inst.subjects.includes(subject);
     const matchLevel   = !level   || inst.level === level;
     const matchSession = !sessionType || inst.sessionTypes.includes(sessionType);
     return matchSearch && matchSubject && matchLevel && matchSession;
   });
 
-  const clearFilters = () => { setSearch(''); setSubject(''); setLevel(''); setSession(''); };
-  const hasFilters = search || subject || level || sessionType;
+  const clearFilters = () => { setSearch(''); setGradeLevel(''); setSubject(''); setLevel(''); setSession(''); };
+  const hasFilters = search || gradeLevel || subject || level || sessionType;
 
   return (
     <div className="min-h-screen bg-brand-dark text-white">
@@ -73,14 +78,41 @@ export default function FindInstructors() {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-white/5"
+              className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t border-white/5"
             >
+              {/* Grade */}
+              <div className="relative">
+                <select value={gradeLevel} onChange={e => { setGradeLevel(e.target.value); setSubject(''); }}
+                  className="w-full appearance-none bg-white/5 border border-white/10 rounded-2xl py-3 px-4 pr-10 text-white focus:ring-2 focus:ring-brand-green outline-none">
+                  <option value="" className="bg-gray-900">All Grades</option>
+                  {GRADE_CATEGORIES.map(g => <option key={g.id} value={g.id} className="bg-gray-900">{g.label}</option>)}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500 pointer-events-none" />
+              </div>
               {/* Subject */}
               <div className="relative">
                 <select value={subject} onChange={e => setSubject(e.target.value)}
                   className="w-full appearance-none bg-white/5 border border-white/10 rounded-2xl py-3 px-4 pr-10 text-white focus:ring-2 focus:ring-brand-green outline-none">
                   <option value="" className="bg-gray-900">All Subjects</option>
-                  {ALL_SUBJECTS.map(s => <option key={s} value={s} className="bg-gray-900">{s}</option>)}
+                  {!gradeLevel && ALL_SUBJECTS.map(s => <option key={s} value={s} className="bg-gray-900">{s}</option>)}
+                  {(gradeLevel === 'grade6-9' || gradeLevel === 'grade10-11') && (
+                    <optgroup label="Grade 6-11 Subjects" className="bg-gray-900">
+                      {SL_SUBJECTS.ol_and_lower.map(s => <option key={s} value={s}>{s}</option>)}
+                    </optgroup>
+                  )}
+                  {gradeLevel === 'grade12-13' && (
+                    <>
+                      <optgroup label="Science Stream" className="bg-gray-900 text-brand-green">
+                        {SL_SUBJECTS.al_stream_science.map(s => <option key={s} value={s} className="text-white">{s}</option>)}
+                      </optgroup>
+                      <optgroup label="Technology Stream" className="bg-gray-900 text-brand-green">
+                        {SL_SUBJECTS.al_stream_technology.map(s => <option key={s} value={s} className="text-white">{s}</option>)}
+                      </optgroup>
+                      <optgroup label="Commerce Stream" className="bg-gray-900 text-brand-green">
+                        {SL_SUBJECTS.al_stream_commerce.map(s => <option key={s} value={s} className="text-white">{s}</option>)}
+                      </optgroup>
+                    </>
+                  )}
                 </select>
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500 pointer-events-none" />
               </div>
@@ -136,7 +168,7 @@ export default function FindInstructors() {
                   {/* Header */}
                   <div className="flex items-center gap-4 mb-5">
                     <div className="w-16 h-16 rounded-2xl overflow-hidden ring-2 ring-white/10 group-hover:ring-brand-green/30 transition-all flex-shrink-0">
-                      <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${inst.avatar}&backgroundColor=b6e3f4,ffd5dc,c0aede`} alt={inst.name} className="w-full h-full object-cover" />
+                      <img src={inst.avatar} alt={inst.name} className="w-full h-full object-cover" />
                     </div>
                     <div className="min-w-0">
                       <h3 className="font-black text-white text-lg leading-tight group-hover:text-brand-green transition-colors truncate">{inst.name}</h3>
@@ -153,9 +185,11 @@ export default function FindInstructors() {
                     <span className="px-2.5 py-1 bg-white/5 rounded-lg text-xs text-neutral-400">{inst.district}</span>
                   </div>
 
-                  {/* A/L Results */}
+                  {/* Results */}
                   <div className="bg-white/5 rounded-xl p-3 mb-4 border border-white/5">
-                    <p className="text-xs text-neutral-500 mb-0.5">GCE Results</p>
+                    <p className="text-xs text-neutral-500 mb-0.5">
+                      {inst.level === 'undergraduate' ? 'GCE A/L Results' : 'GCE O/L Results'}
+                    </p>
                     <p className="text-sm font-bold text-white">{inst.alResults}</p>
                   </div>
 

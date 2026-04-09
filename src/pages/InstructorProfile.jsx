@@ -35,7 +35,7 @@ export default function InstructorProfile() {
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
               className="w-28 h-28 md:w-36 md:h-36 rounded-3xl overflow-hidden ring-4 ring-brand-green/20 flex-shrink-0 shadow-2xl">
               <img
-                src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${inst.avatar}&backgroundColor=b6e3f4,ffd5dc,c0aede`}
+                src={inst.avatar}
                 alt={inst.name} className="w-full h-full object-cover" />
             </motion.div>
 
@@ -117,7 +117,9 @@ export default function InstructorProfile() {
                 </div>
 
                 <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
-                  <h3 className="text-sm font-bold uppercase tracking-widest text-neutral-400 mb-4">GCE Results</h3>
+                  <h3 className="text-sm font-bold uppercase tracking-widest text-neutral-400 mb-4">
+                    {inst.level === 'undergraduate' ? 'GCE A/L Results' : 'GCE O/L Results'}
+                  </h3>
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-brand-green/20 rounded-xl flex items-center justify-center">
                       <Award className="w-5 h-5 text-brand-green" />
