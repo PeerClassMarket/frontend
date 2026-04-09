@@ -9,7 +9,22 @@ export const AppContextProvider = (props) => {
   const [session, setSession] = useState(null);
   const [userData, setUserData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [usage, setUsage] = useState(null);
+
+  // ── Mock Role State ─────────────────────────────────────────
+  const [userRole, setUserRole] = useState(() => {
+    return localStorage.getItem("pc_role") || null; // 'student' | 'instructor' | null
+  });
+  const [studentGrade, setStudentGrade] = useState(() => {
+    return localStorage.getItem("pc_grade") || null; // 'grade6-9' | 'grade10-11' | 'grade12-13'
+  });
+  const [instructorLevel, setInstructorLevel] = useState(() => {
+    return localStorage.getItem("pc_inst_level") || null; // 'al-student' | 'undergraduate'
+  });
+  const [mockUser, setMockUser] = useState(() => {
+    const saved = localStorage.getItem("pc_mock_user");
+    return saved ? JSON.parse(saved) : null;
+  });
+  // ───────────────────────────────────────────────────────────
 
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const savedTheme = localStorage.getItem("theme");
@@ -30,7 +45,7 @@ export const AppContextProvider = (props) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Axios Interceptor to add Supabase Token
+  // Axios Interceptor
   useEffect(() => {
     const interceptor = axios.interceptors.request.use(async (config) => {
       if (session?.access_token) {
@@ -38,13 +53,10 @@ export const AppContextProvider = (props) => {
       }
       return config;
     });
-
     return () => axios.interceptors.request.eject(interceptor);
   }, [session]);
 
-  const toggleTheme = () => {
-    setIsDarkMode((prev) => !prev);
-  };
+  const toggleTheme = () => setIsDarkMode((prev) => !prev);
 
   useEffect(() => {
     if (isDarkMode) {
@@ -56,52 +68,64 @@ export const AppContextProvider = (props) => {
     }
   }, [isDarkMode]);
 
-  const getUserData = async () => {
-    if (!session) {
-      setUserData(null);
-      return;
-    }
-    try {
-      const { data } = await axios.get(`${backendUrl}/api/user/data`);
-      if (data.success) {
-        setUserData(data.userData);
-      }
-    } catch (error) {
-      setUserData(session.user);
-    }
+  // ── Mock Auth Helpers ────────────────────────────────────────
+  const mockLogin = (role, user) => {
+    setUserRole(role);
+    setMockUser(user);
+    localStorage.setItem("pc_role", role);
+    localStorage.setItem("pc_mock_user", JSON.stringify(user));
   };
 
-  const getUsage = async () => {
-    try {
-      const { data } = await axios.get(`${backendUrl}/api/usage/stats`);
-      if (data.success) {
-        setUsage(data.data);
-      }
-    } catch (err) {
-      console.warn("Usage fetch failed");
-    }
+  const mockLogout = () => {
+    setUserRole(null);
+    setMockUser(null);
+    setStudentGrade(null);
+    setInstructorLevel(null);
+    localStorage.removeItem("pc_role");
+    localStorage.removeItem("pc_mock_user");
+    localStorage.removeItem("pc_grade");
+    localStorage.removeItem("pc_inst_level");
   };
 
-  useEffect(() => {
-    if (session) {
-      getUserData();
-      getUsage();
-    }
-  }, [session]);
+  const setGrade = (grade) => {
+    setStudentGrade(grade);
+    localStorage.setItem("pc_grade", grade);
+  };
+
+  const setInstLevel = (level) => {
+    setInstructorLevel(level);
+    localStorage.setItem("pc_inst_level", level);
+  };
+  // ───────────────────────────────────────────────────────────
+
+  // Derived: treat mock login OR supabase session as "logged in"
+  const isLoggedin = !!session || !!mockUser;
 
   const value = {
     backendUrl,
-    isLoggedin: !!session,
-    userData: userData || session?.user,
+    isLoggedin,
+    userData: mockUser || userData || session?.user,
     setUserData,
-    getUserData,
-    usage,
-    getUsage,
     isDarkMode,
     toggleTheme,
     isLoading,
-    login: () => supabase.auth.signInWithOAuth({ provider: 'google' }),
-    logout: () => supabase.auth.signOut()
+
+    // Mock role state
+    userRole,       // 'student' | 'instructor' | null
+    studentGrade,   // 'grade6-9' | 'grade10-11' | 'grade12-13'
+    instructorLevel, // 'al-student' | 'undergraduate'
+    mockUser,
+    mockLogin,
+    mockLogout,
+    setGrade,
+    setInstLevel,
+
+    // Legacy supabase helpers (kept for backward compat)
+    login:  () => supabase.auth.signInWithOAuth({ provider: "google" }),
+    logout: () => {
+      mockLogout();
+      supabase.auth.signOut();
+    },
   };
 
   return (

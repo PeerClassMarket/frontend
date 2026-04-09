@@ -1,175 +1,232 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { AppContext } from '../context/AppContext';
-import axios from 'axios';
 import { motion } from 'framer-motion';
-import { Calendar, Clock, DollarSign, User, ShieldCheck, Mail, ArrowRight, Loader2 } from 'lucide-react';
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
+import { ArrowLeft, ArrowRight, Clock, Calendar, Star, MessageSquare } from 'lucide-react';
+import { mockInstructors, SESSION_TYPES, DURATIONS } from '../data/mockData';
+import { AppContext } from '../context/AppContext';
 import { toast } from 'react-toastify';
 
 export default function BookingPage() {
   const { id } = useParams();
-  const { backendUrl, isLoggedin, login } = useContext(AppContext);
-  const [gig, setGig] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [startTime, setStartTime] = useState(new Date());
-  const [bookingLoading, setBookingLoading] = useState(false);
   const navigate = useNavigate();
+  const { isLoggedin } = useContext(AppContext);
+  const inst = mockInstructors.find(i => i.id === Number(id));
 
-  useEffect(() => {
-    fetchGig();
-  }, [id]);
+  const [sessionType, setSessionType] = useState('');
+  const [duration, setDuration]       = useState(60);
+  const [notes, setNotes]             = useState('');
+  const [date, setDate]               = useState('');
+  const [time, setTime]               = useState('');
+  const [loading, setLoading]         = useState(false);
 
-  const fetchGig = async () => {
-    try {
-      const { data } = await axios.get(`${backendUrl}/api/gigs/${id}`);
-      if (data.success) {
-        setGig(data.data);
-      }
-    } catch (error) {
-      console.error("Error fetching gig", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  if (!inst) return (
+    <div className="min-h-screen bg-brand-dark flex flex-col items-center justify-center text-white gap-4">
+      <p className="text-5xl">😕</p>
+      <h2 className="text-2xl font-black">Instructor not found</h2>
+    </div>
+  );
 
-  const handleBooking = async () => {
+  const selectedDuration = DURATIONS.find(d => d.value === Number(duration)) || DURATIONS[1];
+  const totalPrice = Math.round(inst.pricePerHour * selectedDuration.price_factor);
+
+  const handleBook = (e) => {
+    e.preventDefault();
     if (!isLoggedin) {
-      login();
+      toast.info('Please sign in to book a session.');
+      navigate('/login');
       return;
     }
-    setBookingLoading(true);
-    try {
-      // End time is start time + duration from gig
-      const endTime = new Date(startTime.getTime() + (gig.durationMinutes || 60) * 60000);
-      
-      const { data } = await axios.post(`${backendUrl}/api/bookings/${id}`, {
-        startTime: startTime.toISOString(),
-        endTime: endTime.toISOString()
-      });
-
-      if (data.success) {
-        toast.success("Booking request sent!");
-        navigate('/student-dashboard');
-      }
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Booking failed");
-    } finally {
-      setBookingLoading(false);
-    }
+    if (!sessionType) { toast.error('Please select a session type.'); return; }
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+      toast.success('Booking request sent! Waiting for instructor confirmation.');
+      navigate('/student-dashboard');
+    }, 1400);
   };
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center dark:bg-brand-dark"><Loader2 className="w-12 h-12 animate-spin text-brand-green" /></div>;
-  if (!gig) return <div className="min-h-screen flex items-center justify-center dark:bg-brand-dark text-white">Gig not found.</div>;
-
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-brand-dark transition-colors duration-500 pt-32 pb-12 px-8">
-      <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16">
-        {/* Left: Gig Info */}
-        <motion.div 
-          initial={{ opacity: 0, x: -30 }} 
-          animate={{ opacity: 1, x: 0 }}
-          className="space-y-8"
-        >
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-brand-green/10 text-brand-green rounded-full text-sm font-bold uppercase tracking-widest">
-            {gig.subject}
-          </div>
-          <h1 className="text-5xl md:text-7xl font-black text-brand-dark dark:text-white leading-tight">
-            {gig.title}
-          </h1>
-          <p className="text-xl text-neutral-500 dark:text-neutral-400 leading-relaxed">
-            {gig.description}
-          </p>
+    <div className="min-h-screen bg-brand-dark text-white">
+      <div className="max-w-6xl mx-auto px-6 lg:px-10 pt-10 pb-20">
+        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-neutral-400 hover:text-white transition-colors mb-8 text-sm font-semibold">
+          <ArrowLeft className="w-4 h-4" /> Back to profile
+        </button>
 
-          <div className="flex flex-wrap gap-8 py-8 border-y border-slate-200 dark:border-white/10">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-white dark:bg-white/5 rounded-2xl flex items-center justify-center shadow-sm">
-                <DollarSign className="w-6 h-6 text-brand-green" />
-              </div>
-              <div>
-                <p className="text-xs font-bold text-neutral-400">Price</p>
-                <p className="text-xl font-black dark:text-white">${gig.price}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-white dark:bg-white/5 rounded-2xl flex items-center justify-center shadow-sm">
-                <Clock className="w-6 h-6 text-brand-green" />
-              </div>
-              <div>
-                <p className="text-xs font-bold text-neutral-400">Duration</p>
-                <p className="text-xl font-black dark:text-white">{gig.durationMinutes} Mins</p>
-              </div>
-            </div>
-          </div>
+        <div className="grid lg:grid-cols-2 gap-12 items-start">
 
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-3xl overflow-hidden ring-4 ring-brand-green/20">
-              <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${gig.tutor.name}`} alt="Tutor" />
-            </div>
+          {/* Left — Instructor summary */}
+          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
             <div>
-              <p className="text-sm font-bold text-neutral-400">Taught by</p>
-              <h4 className="text-2xl font-black dark:text-white">{gig.tutor.name}</h4>
-              <div className="flex items-center gap-1 text-brand-green">
-                <ShieldCheck className="w-4 h-4 fill-brand-green/20" />
-                <span className="text-xs font-bold uppercase tracking-widest">Verified Expert</span>
+              <span className="inline-block px-3 py-1 bg-brand-green/10 text-brand-green rounded-full text-xs font-bold uppercase tracking-widest border border-brand-green/20 mb-4">
+                Book a Session
+              </span>
+              <h1 className="text-4xl md:text-5xl font-black leading-tight">
+                Session with<br />
+                <span className="text-brand-green">{inst.name}</span>
+              </h1>
+              <p className="text-neutral-400 mt-3">{inst.institution}</p>
+            </div>
+
+            {/* Instructor card */}
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-5 flex items-center gap-4">
+              <div className="w-16 h-16 rounded-2xl overflow-hidden ring-2 ring-white/10 flex-shrink-0">
+                <img src={inst.avatar} alt={inst.name} className="w-full h-full object-cover" />
+              </div>
+              <div>
+                <p className="font-black text-white">{inst.name}</p>
+                <p className="text-xs text-neutral-400 mt-0.5">{inst.alResults}</p>
+                <div className="flex items-center gap-1 mt-1">
+                  <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                  <span className="text-sm font-bold text-white">{inst.rating}</span>
+                  <span className="text-xs text-neutral-400">· {inst.studentsHelped} students</span>
+                </div>
               </div>
             </div>
-          </div>
-        </motion.div>
 
-        {/* Right: Booking Form */}
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="bg-white dark:bg-white/5 p-10 rounded-[3rem] shadow-2xl border border-slate-200 dark:border-white/10 relative h-fit"
-        >
-          <div className="space-y-8">
-            <h3 className="text-3xl font-black dark:text-white">Secure Your Slot</h3>
-            
-            <div className="space-y-4">
-              <label className="text-sm font-bold text-neutral-500 uppercase tracking-widest pl-2 flex items-center gap-2">
-                <Calendar className="w-4 h-4" /> Select Date & Time
-              </label>
-              <div className="relative">
-                <DatePicker 
-                  selected={startTime} 
-                  onChange={(date) => setStartTime(date)} 
-                  showTimeSelect
-                  dateFormat="MMMM d, yyyy h:mm aa"
-                  className="w-full bg-slate-50 dark:bg-brand-dark text-brand-dark dark:text-white border-none rounded-2xl p-5 shadow-inner focus:ring-2 focus:ring-brand-green"
+            {/* Subjects */}
+            <div>
+              <p className="text-xs font-bold text-neutral-400 uppercase tracking-widest mb-3">Subjects Covered</p>
+              <div className="flex flex-wrap gap-2">
+                {inst.subjects.map(s => (
+                  <span key={s} className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-xl text-sm text-neutral-300 font-medium">{s}</span>
+                ))}
+              </div>
+            </div>
+
+            {/* Availability note */}
+            <div className="bg-brand-green/5 border border-brand-green/20 rounded-2xl p-4 text-sm text-neutral-400">
+              📅 Available: <strong className="text-white">{inst.availability.join(', ')}</strong><br />
+              Instructor will confirm the exact time after receiving your request.
+            </div>
+          </motion.div>
+
+          {/* Right — Booking Form */}
+          <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}>
+            <form onSubmit={handleBook} className="bg-white/5 border border-white/10 rounded-3xl p-8 space-y-6">
+              <h2 className="text-2xl font-black text-white">Configure your session</h2>
+
+              {/* Session Type */}
+              <div>
+                <label className="text-xs font-bold text-neutral-400 uppercase tracking-widest block mb-3">Session Type *</label>
+                <div className="space-y-2">
+                  {SESSION_TYPES.filter(t => inst.sessionTypes.includes(t.id)).map(t => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => setSessionType(t.id)}
+                      className={`w-full flex items-start gap-3 p-4 rounded-2xl border-2 text-left transition-all ${
+                        sessionType === t.id
+                          ? 'border-brand-green bg-brand-green/10'
+                          : 'border-white/10 hover:border-white/20'
+                      }`}
+                    >
+                      <span className="text-2xl">{t.icon}</span>
+                      <div>
+                        <p className={`font-bold text-sm ${sessionType === t.id ? 'text-brand-green' : 'text-white'}`}>{t.label}</p>
+                        <p className="text-xs text-neutral-400 mt-0.5">{t.desc}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Duration */}
+              <div>
+                <label className="text-xs font-bold text-neutral-400 uppercase tracking-widest block mb-3">
+                  <Clock className="w-3.5 h-3.5 inline mr-1" />Duration
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {DURATIONS.map(d => (
+                    <button
+                      key={d.value}
+                      type="button"
+                      onClick={() => setDuration(d.value)}
+                      className={`py-3 rounded-xl border text-sm font-bold transition-all ${
+                        Number(duration) === d.value
+                          ? 'border-brand-green bg-brand-green/10 text-brand-green'
+                          : 'border-white/10 text-neutral-400 hover:border-white/20'
+                      }`}
+                    >
+                      {d.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Date & Time */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-neutral-400 uppercase tracking-widest block mb-2">
+                    <Calendar className="w-3.5 h-3.5 inline mr-1" />Preferred Date
+                  </label>
+                  <input
+                    type="date"
+                    value={date}
+                    onChange={e => setDate(e.target.value)}
+                    min={new Date().toISOString().split('T')[0]}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-brand-green focus:border-transparent outline-none text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-neutral-400 uppercase tracking-widest block mb-2">
+                    <Clock className="w-3.5 h-3.5 inline mr-1" />Preferred Time
+                  </label>
+                  <input
+                    type="time"
+                    value={time}
+                    onChange={e => setTime(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-brand-green focus:border-transparent outline-none text-sm"
+                  />
+                </div>
+              </div>
+
+              {/* Notes */}
+              <div>
+                <label className="text-xs font-bold text-neutral-400 uppercase tracking-widest block mb-2">
+                  <MessageSquare className="w-3.5 h-3.5 inline mr-1" />Notes for Instructor
+                </label>
+                <textarea
+                  rows={3}
+                  value={notes}
+                  onChange={e => setNotes(e.target.value)}
+                  placeholder="e.g. I need help with integration topics in Combined Maths. Specifically 2023 A/L past paper Section B."
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-neutral-600 focus:ring-2 focus:ring-brand-green focus:border-transparent outline-none text-sm resize-none"
                 />
               </div>
-            </div>
 
-            <div className="bg-brand-green/5 p-6 rounded-2xl border border-brand-green/10">
-              <div className="flex justify-between items-center mb-4">
-                <span className="text-neutral-500 dark:text-neutral-400 font-bold">Standard Rate</span>
-                <span className="text-2xl font-black dark:text-white">${gig.price}</span>
+              {/* Price summary */}
+              <div className="bg-white/5 border border-white/5 rounded-2xl p-4 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-neutral-400">Rate</span>
+                  <span className="text-white font-bold">LKR {inst.pricePerHour.toLocaleString()} / hr</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-neutral-400">Duration</span>
+                  <span className="text-white font-bold">{selectedDuration.label}</span>
+                </div>
+                <div className="h-px bg-white/10 my-1" />
+                <div className="flex justify-between">
+                  <span className="font-black text-white">Total</span>
+                  <span className="font-black text-brand-green text-lg">LKR {totalPrice.toLocaleString()}</span>
+                </div>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-neutral-500 dark:text-neutral-400 font-bold">Transaction Fee</span>
-                <span className="text-neutral-500 dark:text-neutral-400">$2.00</span>
-              </div>
-              <div className="h-px bg-brand-green/10 my-4" />
-              <div className="flex justify-between items-center">
-                <span className="text-lg font-black dark:text-brand-green">Total Due</span>
-                <span className="text-3xl font-black dark:text-brand-green">${gig.price + 2}</span>
-              </div>
-            </div>
 
-            <button 
-              onClick={handleBooking}
-              disabled={bookingLoading}
-              className="w-full py-6 bg-brand-green text-brand-dark font-black rounded-3xl hover:bg-brand-dark hover:text-white transition-all transform hover:scale-105 flex items-center justify-center gap-3 shadow-xl shadow-brand-green/20 disabled:opacity-50"
-            >
-              {bookingLoading ? <Loader2 className="w-6 h-6 animate-spin" /> : <>Complete Booking <ArrowRight className="w-6 h-6" /></>}
-            </button>
-            <p className="text-center text-xs font-bold text-neutral-400 uppercase tracking-widest">
-              No immediate charge. Tutor will confirm first.
-            </p>
-          </div>
-        </motion.div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-5 bg-brand-green text-brand-dark font-black rounded-2xl hover:bg-white transition-all flex items-center justify-center gap-2 shadow-xl shadow-brand-green/20 disabled:opacity-50 text-base"
+              >
+                {loading ? (
+                  <div className="w-5 h-5 border-2 border-brand-dark/40 border-t-brand-dark rounded-full animate-spin" />
+                ) : (
+                  <> Send Booking Request <ArrowRight className="w-5 h-5" /> </>
+                )}
+              </button>
+              <p className="text-center text-xs text-neutral-500">No payment until instructor confirms your session.</p>
+            </form>
+          </motion.div>
+
+        </div>
       </div>
     </div>
   );
